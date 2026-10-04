@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: hexarendeauto
+    runtime: python
+    plan: free
+    buildCommand: pip install -r requirements.txt
+    startCommand: python Hexa.py
+    healthCheckPath: /health
+    autoDeployTrigger: commit
+    envVars:
+      - key: API_ID
+        sync: false
+      - key: API_HASH
+        sync: false
+      - key: TELEGRAM_SESSION
+        sync: false
