@@ -196,7 +196,7 @@ async def pokeSwitch(event):
 async def main():
     await client.start()
     me = await client.get_me()
-    print(f"Telegram session connected: {getattr(me, "username", None) or me.id}")
+    print(f"Telegram session connected: {getattr(me, 'username', None) or me.id}")
     await client.run_until_disconnected()
 
 if __name__ == "__main__":
