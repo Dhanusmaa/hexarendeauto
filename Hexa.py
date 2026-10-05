@@ -73,7 +73,7 @@ ultra_ball = [
     "A wild Zamazenta", "A wild Eternatus", "A wild Kubfu", "A wild Urshifu",
     "A wild Regieleki", "A wild Regidrago", "A wild Glastrier", "A wild Spectrier",
     "A wild Calyrex",
-
+]
 
 # Your requested example: Abra uses a Regular Ball.
 regular_ball.append("Abra")
