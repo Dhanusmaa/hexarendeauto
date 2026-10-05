@@ -63,8 +63,17 @@ regular_ball = ["A wild Alakazam", "A wild Slowbro", "A wild Kangaskhan", "A wil
 # ============================================================
 
 ultra_ball = [
-    "Regigigas",
-]
+    "Rayquaza", "Kyogre", "Groudon", "Dialga", "Kyurem", "Reshiram", "Zekrom", "Yveltal",
+    "Xerneas", "Zygarde", "Cosmog", "Cosmoem", "Necrozma", "Ho-oh", "Lugia", "Arceus",
+    "Zeraora", "Pheromosa", "Mewtwo", "Victini", "Regigigas", "Deoxys", "Marshadow",
+    "A wild Mewtwo", "A wild Latias", "A wild Latios", "A wild Rayquaza", "A wild Lugia",
+    "A wild Celebi", "A wild Ho-Oh", "A wild Kyogre", "A wild Groudon", "A wild Dialga",
+    "A wild Regigigas", "A wild Arceus", "A wild Giratina", "A wild Victini",
+    "A wild Terrakion", "A wild Kyurem", "A wild Zekrom", "A wild Zacian",
+    "A wild Zamazenta", "A wild Eternatus", "A wild Kubfu", "A wild Urshifu",
+    "A wild Regieleki", "A wild Regidrago", "A wild Glastrier", "A wild Spectrier",
+    "A wild Calyrex",
+
 
 # Your requested example: Abra uses a Regular Ball.
 regular_ball.append("Abra")
