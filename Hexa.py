@@ -49,7 +49,69 @@ regular_poks_repeat = ["A wild Mewtwo", "A wild Latias", "A wild Latios", "A wil
 
 regular_ball = ["A wild Alakazam", "A wild Slowbro", "A wild Kangaskhan", "A wild Pinsir", "A wild Gyarados", "A wild Aerodactyl", "A wild Ampharos", "A wild Steelix", "A wild Scizor", "A wild Heracross", "A wild Tyranitar", "A wild Sceptile", "A wild Blaziken", "A wild Swampert", "A wild Gardevoir", "A wild Sableye", "A wild Mawile", "A wild Aggron", "A wild Medicham", "A wild Manectric", "A wild Sharpedo", "A wild Camerupt", "A wild Altaria", "A wild Banette", "A wild Absol", "A wild Glalie", "A wild Salamence", "A wild Metagross", "A wild Lopunny", "A wild Garchomp", "A wild Lucario", "A wild Abomasnow", "A wild Gallade", "A wild Audino", "A wild Bulbasaur", "A wild Ivysaur", "A wild Venusaur", "A wild Charmander", "A wild Charizard", "A wild Blastoise", "A wild Kakuna", "A wild Beedrill", "A wild Pidgeot", "A wild Growlithe", "A wild Shellder", "A wild Gengar", "A wild Totodile", "A wild Togepi", "A wild Togetic", "A wild Houndoom", "A wild Slakoth", "A wild Vigoroth", "A wild Nincada", "A wild Chimchar", "A wild Buneary", "A Wild Fennekin", "A Wild Braixen", "A Wild Froakie", "A Wild Frogadier", "A Wild Barraskewda", "A Wild Arrokuda", "A Wild Darumaka", "A Wild Drakloak", "A Wild Dragapult", "A Wild Dracovish", "A Wild Duraludon", "A Wild Raboot", "A Wild Cinderace", "A Wild Scorbunny", "A Wild Sobble", "A Wild Drizzile", "A Wild Inteleon", "A Wild Grookey", "A Wild Thwackey", "A Wild Rillaboom", "A Wild Sizzlipede", "A Wild Centiskorch", "A Wild Morgrem", "A Wild Impidimp", "A Wild Grimmsnarl", "A Wild Toxel", "A Wild Toxtricity", "A Wild Rookidee", "A Wild Corvisquire","A Wild Corviknight"]
 
-repeat_ball = regular_poks_repeat + legendary_poks
+# ============================================================
+# POKEMON -> BALL MAPPING
+# Add a Pokemon name to the list for the ball you want HexaAuto
+# to select automatically.
+#
+# Example:
+#   regular_ball = ["Abra", ...]
+#   ultra_ball   = ["Regigigas", ...]
+#
+# Names are normalized below, so both "Regigigas" and
+# "A wild Regigigas" work.
+# ============================================================
+
+ultra_ball = [
+    "Regigigas",
+]
+
+# Your requested example: Abra uses a Regular Ball.
+regular_ball.append("Abra")
+
+# Normalize the existing lists so battle messages such as
+# "Wild Regigigas" match entries written as "A wild Regigigas".
+def normalize_pokemon_name(name):
+    name = re.sub(r"^a\s+wild\s+", "", str(name).strip(), flags=re.IGNORECASE)
+    name = re.sub(r"^wild\s+", "", name, flags=re.IGNORECASE)
+    return name.casefold()
+
+regular_ball = {normalize_pokemon_name(name) for name in regular_ball}
+repeat_ball = {
+    normalize_pokemon_name(name)
+    for name in (regular_poks_repeat + legendary_poks)
+}
+ultra_ball = {normalize_pokemon_name(name) for name in ultra_ball}
+
+# Button labels used by the Telegram game. The fallback keeps the
+# automation working if the game displays "Ultra Ball" instead of "Ultra".
+BALL_BUTTONS = {
+    "Regular": ("Regular", "Regular Ball"),
+    "Repeat": ("Repeat", "Repeat Ball"),
+    "Ultra": ("Ultra", "Ultra Ball"),
+}
+
+def ball_for_pokemon(pokemon_name):
+    name = normalize_pokemon_name(pokemon_name)
+    if name in ultra_ball:
+        return "Ultra"
+    if name in regular_ball:
+        return "Regular"
+    if name in repeat_ball:
+        return "Repeat"
+    return None
+
+async def click_ball(event, ball_name):
+    for label in BALL_BUTTONS.get(ball_name, (ball_name,)):
+        try:
+            await event.click(text=label)
+            print(f"Selected {label} Ball for the encounter.")
+            return True
+        except Exception:
+            continue
+    print(f"Could not find the {ball_name} Ball button.")
+    return False
+
 cooldown = random.randint(1, 2)
 low_lvl = False
 
@@ -68,7 +130,7 @@ async def hunt_or_pass(event):
         global cooldown
         pok_name = event.raw_text.split("wild ")[1].split(" (")[0]
         print(pok_name)
-        if pok_name in regular_ball or pok_name in repeat_ball:
+        if ball_for_pokemon(pok_name):
             await asyncio.sleep(cooldown)
             await event.click(0, 0)
         else:
@@ -134,24 +196,20 @@ async def battle(event):
                 if low_lvl == True:
                     await asyncio.sleep(cooldown)
                     await event.click(text="Poke Balls")
-                    if pok_name in regular_ball:
+                    selected_ball = ball_for_pokemon(pok_name)
+                    if selected_ball:
                         await asyncio.sleep(1)
-                        await event.click(text="Regular")
-                    elif pok_name in repeat_ball:
-                        await asyncio.sleep(1)
-                        await event.click(text="Repeat")
+                        await click_ball(event, selected_ball)
                 elif wild_health_percentage > 50:
                     await asyncio.sleep(1)
                     await event.click(0, 0)
                 elif wild_health_percentage <= 50:
                     await asyncio.sleep(1)
                     await event.click(text="Poke Balls")
-                    if pok_name in regular_ball:
+                    selected_ball = ball_for_pokemon(pok_name)
+                    if selected_ball:
                         await asyncio.sleep(1)
-                        await event.click(text="Regular")
-                    elif pok_name in repeat_ball:
-                        await asyncio.sleep(1)
-                        await event.click(text="Repeat")
+                        await click_ball(event, selected_ball)
                 print(f"{pok_name} health percentage: {wild_health_percentage}%")
             else:
                 print(f"Wild Pokemon {pok_name} HP not found in the battle description.")
