@@ -132,102 +132,88 @@ async def dailyLimit(event):
     
 @client.on(events.NewMessage(from_users=572621020))
 async def hunt_or_pass(event):
-    if "✨ Shiny pokemon found!" in event.raw_text:  
-        await event.client.send_message(-1001237867208, "@uxnor shiny aaya jaldi dekh") 
-        await client.disconnect()
-    elif "A wild" in event.raw_text:
-        global cooldown
-        pok_name = event.raw_text.split("wild ")[1].split(" (")[0]
-        print(pok_name)
-        if ball_for_pokemon(pok_name):
-            await asyncio.sleep(cooldown)
-            await event.click(0, 0)
-        else:
-            await asyncio.sleep(cooldown)
-            await client.send_message(572621020, '/hunt')
-            
-            
-
-@client.on(events.NewMessage(from_users=572621020))
-async def battlefirst(event):
-    global low_lvl
     global cooldown
-    if "Battle begins!" in event.raw_text:
-        wild_pokemon_name_match = re.search(r"Wild (\w+) \[.*\]\nLv\. \d+  •  HP \d+/\d+", event.raw_text)
-        
-        if wild_pokemon_name_match:
-            pok_name = wild_pokemon_name_match.group(1)
-            
-            wild_pokemon_hp_match = re.search(r"Wild .* \[.*\]\nLv\. \d+  •  HP (\d+)/(\d+)", event.raw_text)
 
-            if wild_pokemon_hp_match:
-                wild_max_hp = int(wild_pokemon_hp_match.group(2))
-                if wild_max_hp <= 50:
-                    low_lvl = True
-                    print("low lvl set to true")
-                    await asyncio.sleep(cooldown)
-                    await event.click(text="Poke Balls")
-                    print("cliked on btn poke balls")
-                else:
-                    await asyncio.sleep(2)
-                    await event.click(0, 0)
-                    
-                    
- 
+    if "✨ Shiny pokemon found!" in event.raw_text:
+        await event.client.send_message(-1001237867208, "@uxnor shiny aaya jaldi dekh")
+        await client.disconnect()
+        return
+
+    if "A wild" not in event.raw_text:
+        return
+
+    # The current game UI starts every catch with a "Catch" button.
+    pok_name_match = re.search(r"A wild (.+?) \(Lv\.", event.raw_text, flags=re.IGNORECASE)
+    if not pok_name_match:
+        print("Could not read wild Pokemon name.")
+        return
+
+    pok_name = pok_name_match.group(1).strip()
+    selected_ball = ball_for_pokemon(pok_name)
+    print(f"Wild Pokemon: {pok_name} | Ball: {selected_ball}")
+
+    if not selected_ball:
+        await asyncio.sleep(cooldown)
+        await client.send_message(572621020, "/hunt")
+        return
+
+    try:
+        await asyncio.sleep(cooldown)
+        await event.click(text="Catch")
+        print(f"Clicked Catch for {pok_name}.")
+    except Exception as exc:
+        print(f"Could not click Catch for {pok_name}: {exc}")
+
+
+@client.on(events.MessageEdited(from_users=572621020))
+async def auto_throw_ball(event):
+    global cooldown
+
+    if "Throw Ball" not in event.raw_text:
+        return
+
+    pok_name_match = re.search(r"A wild (.+?) \(Lv\.", event.raw_text, flags=re.IGNORECASE)
+    if not pok_name_match:
+        print("Could not read Pokemon name before throwing.")
+        return
+
+    pok_name = pok_name_match.group(1).strip()
+    selected_ball = ball_for_pokemon(pok_name)
+
+    if not selected_ball:
+        print(f"No ball mapping for {pok_name}.")
+        return
+
+    try:
+        await asyncio.sleep(cooldown)
+
+        # First click the game's "Throw Ball" button.
+        await event.click(text="Throw Ball")
+        print(f"Clicked Throw Ball for {pok_name}.")
+
+        # The ball buttons appear after the Throw Ball click, so fetch
+        # the freshly edited message before selecting the actual ball.
+        await asyncio.sleep(0.8)
+        updated = await client.get_messages(572621020, ids=event.id)
+
+        if await click_ball(updated, selected_ball):
+            print(f"Threw {selected_ball} Ball at {pok_name}.")
+        else:
+            print(f"Failed to select {selected_ball} Ball for {pok_name}.")
+    except Exception as exc:
+        print(f"Auto throw failed for {pok_name}: {exc}")
+
 
 def calculate_health_percentage(max_hp, current_hp):
     if max_hp <= 0:
         raise ValueError("Total health must be greater than zero.")
 
     if current_hp < 0 or current_hp > max_hp:
-        raise ValueError("Current health must be between 0 and the total health.")
+        raise ValueError("Current health must be between 0 and total health.")
 
-    health_percentage = round((current_hp / max_hp) * 100)
-    return health_percentage
-
+    return round((current_hp / max_hp) * 100)
 
 
-@client.on(events.MessageEdited(from_users=572621020))
-async def battle(event):
-    global low_lvl
-    if "Wild" in event.raw_text:
-        wild_pokemon_name_match = re.search(r"Wild (\w+) \[.*\]\nLv\. \d+  •  HP \d+/\d+", event.raw_text)
-
-        if wild_pokemon_name_match:
-            pok_name = wild_pokemon_name_match.group(1)
-
-            wild_pokemon_hp_match = re.search(r"Wild .* \[.*\]\nLv\. \d+  •  HP (\d+)/(\d+)", event.raw_text)
-
-            if wild_pokemon_hp_match:
-                wild_max_hp = int(wild_pokemon_hp_match.group(2))
-                wild_current_hp = int(wild_pokemon_hp_match.group(1))
-                wild_health_percentage = calculate_health_percentage(wild_max_hp, wild_current_hp)
-                if low_lvl == True:
-                    await asyncio.sleep(cooldown)
-                    await event.click(text="Poke Balls")
-                    selected_ball = ball_for_pokemon(pok_name)
-                    if selected_ball:
-                        await asyncio.sleep(1)
-                        await click_ball(event, selected_ball)
-                elif wild_health_percentage > 50:
-                    await asyncio.sleep(1)
-                    await event.click(0, 0)
-                elif wild_health_percentage <= 50:
-                    await asyncio.sleep(1)
-                    await event.click(text="Poke Balls")
-                    selected_ball = ball_for_pokemon(pok_name)
-                    if selected_ball:
-                        await asyncio.sleep(1)
-                        await click_ball(event, selected_ball)
-                print(f"{pok_name} health percentage: {wild_health_percentage}%")
-            else:
-                print(f"Wild Pokemon {pok_name} HP not found in the battle description.")
-        else:
-            print("Wild Pokemon name not found in the battle description.")
-            
-            
-            
-            
 @client.on(events.MessageEdited(from_users=572621020))
 async def skip(event):
     if any(substring in event.raw_text for substring in ["fled", "💵", "You caught"]):
